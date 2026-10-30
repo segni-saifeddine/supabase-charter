@@ -17,7 +17,7 @@ databases:
   - # Ledger id, a UUID generated at provision time. Also written into the
     # agent's marker table inside the database itself, which is how the agent
     # later proves the live project is one it created. Never reused.
-    id: 7f3b1c84-0f2a-4c6e-9a1d-2b5e8c7d4a10
+    id: 00000000-0000-4000-8000-000000000001
 
     # Supabase project name, built by the agent as <kind>-<purpose slug>-<date>.
     # Unique within the ledger and used as the handle in chat ("delete the
@@ -33,7 +33,7 @@ databases:
     # Supabase project ref, assigned by Supabase once the project is created.
     # Empty while status is "provisioning" and if provisioning failed before
     # Supabase answered. Also the project hostname: <ref>.supabase.co.
-    ref: oxrdydnnxkibcpgrbubk
+    ref: exampleref0000000001
 
     # Deployment environment, from the DB_AGENT_VAULT_MOUNTS map. It selects
     # which Vault KV mount the credentials are written to, so a dev database
@@ -142,10 +142,10 @@ databases:
   # ---------------------------------------------------------------------------
   # A permanent production database: no expiry, no seeding.
   # ---------------------------------------------------------------------------
-  - id: c41e9d27-8b6f-4e03-91ac-5d7f0e2b63f8
+  - id: 00000000-0000-4000-8000-000000000002
     name: prod-billing-api-20260301
     kind: prod
-    ref: hejepzmvylfkbjmsexrh
+    ref: exampleref0000000002
     environment: prod
     secret_path: billing
     vault_path: prod/billing/prod-billing-api-20260301
@@ -165,10 +165,10 @@ databases:
   # A deleted database. The entry stays as history: it records that the project
   # and its Vault secret were removed, and by whom.
   # ---------------------------------------------------------------------------
-  - id: a9d8d829-76e8-4d99-905b-e8414e0eac5a
+  - id: 00000000-0000-4000-8000-000000000003
     name: test-schema-check-20260214
     kind: test
-    ref: sccqgvlbluovaeunamzw
+    ref: exampleref0000000003
     environment: dev
     secret_path: sandbox
     vault_path: dev/sandbox/test-schema-check-20260214
