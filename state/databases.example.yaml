@@ -1,0 +1,184 @@
+# Reference for the ledger format. Documentation only — the agent never reads
+# this file. The live ledger is databases.yaml, which starts as an empty list
+# and is rewritten by the agent on every change.
+#
+# The ledger is the agent's boundary: a database that has no entry here is out
+# of scope, and the agent refuses to touch it. That is why the file is committed
+# to git, reviewed like code, and why it never holds a secret value — only the
+# Vault path where the secret can be found.
+
+# Ledger schema version. Bumped only by a breaking change to the format.
+version: 1
+
+databases:
+  # ---------------------------------------------------------------------------
+  # A short-lived demo database, seeded once from an existing database.
+  # ---------------------------------------------------------------------------
+  - # Ledger id, a UUID generated at provision time. Also written into the
+    # agent's marker table inside the database itself, which is how the agent
+    # later proves the live project is one it created. Never reused.
+    id: 7f3b1c84-0f2a-4c6e-9a1d-2b5e8c7d4a10
+
+    # Supabase project name, built by the agent as <kind>-<purpose slug>-<date>.
+    # Unique within the ledger and used as the handle in chat ("delete the
+    # acme pilot demo"). Max 63 characters.
+    name: demo-acme-pilot-20260412
+
+    # Category of database, from the configured DB_AGENT_KINDS list. The name
+    # prefix must match it: the agent refuses to act on a live project whose
+    # name does not start with a known kind, so a typo cannot reach an
+    # unrelated project.
+    kind: demo
+
+    # Supabase project ref, assigned by Supabase once the project is created.
+    # Empty while status is "provisioning" and if provisioning failed before
+    # Supabase answered. Also the project hostname: <ref>.supabase.co.
+    ref: oxrdydnnxkibcpgrbubk
+
+    # Deployment environment, from the DB_AGENT_VAULT_MOUNTS map. It selects
+    # which Vault KV mount the credentials are written to, so a dev database
+    # cannot land in the production mount.
+    environment: staging
+
+    # Folder under the Vault mount where this database's secret lives. Free
+    # form and may be nested (team-a, acme/staging). Combined with the project
+    # name it forms vault_path below.
+    secret_path: team-a
+
+    # Full Vault location of the credentials, <mount>/<secret_path>/<name>.
+    # The secret itself holds SUPABASE_URL, SUPABASE_ANON_KEY,
+    # SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL, POSTGRES_PASSWORD and
+    # PROJECT_REF. Only the path is recorded here, never a value.
+    vault_path: staging/team-a/demo-acme-pilot-20260412
+
+    # Supabase compute size (micro, small, medium, ...). Drives the cost quote
+    # the agent must get approved before provisioning.
+    size: micro
+
+    # Supabase region the project runs in.
+    region: eu-central-1
+
+    # Who asked for it. Defaults to the local git user.email.
+    requested_by: dev@example.com
+
+    # Why it exists, in the requester's words. Also the source of the name slug.
+    purpose: Acme pilot demo
+
+    # When the project was created (UTC, RFC 3339).
+    created_at: '2026-04-12T09:14:02Z'
+
+    # When it should be removed. The agent does not delete anything on its own;
+    # this is the date it reports so an operator or a scheduled job can act.
+    # null means no expiry, which is the default for permanent kinds.
+    expires_at: '2026-04-19T09:14:02Z'
+
+    # Lifecycle state:
+    #   provisioning  - creation started and did not finish. Can only be
+    #                   deleted; the marker or the Vault entry may be missing.
+    #   active        - fully provisioned and verified.
+    #   deleting      - deletion started. Re-running the deletion resumes it.
+    #   delete_failed - the Supabase delete call failed. Safe to run again.
+    #   deleted       - gone everywhere; the entry is kept as history.
+    status: active
+
+    # One entry per completed copy into this database. Append-only history of
+    # what data it holds and where that data came from.
+    seeds:
+      - # When the copy ran (UTC).
+        at: '2026-04-12T10:02:31Z'
+
+        # Where the rows came from: a catalog name from DB_AGENT_SOURCES or a
+        # Vault path. Sources are opened read-only; a copy never writes to one.
+        source: prod/analytics/primary-db
+
+        # Tables copied, in the order the agent resolved from foreign keys.
+        tables:
+          - regions
+          - customers
+          - orders
+
+        # The time window the rows were filtered by, or null for no filter.
+        # end_inclusive is true when `to` was given as a date (the whole day
+        # is included) and false when it was a timestamp.
+        period:
+          column: created_at
+          from: '2026-01-01'
+          to: '2026-03-31'
+          end_inclusive: true
+
+        # Rows actually inserted, per table.
+        rows:
+          regions: 4
+          customers: 57
+          orders: 281
+
+        # append (rows added) or replace (listed tables emptied first, which
+        # requires a separate explicit confirmation).
+        mode: append
+
+        # true when only the structure was copied and no rows.
+        schema_only: false
+
+        # Tables copied in full because they have no period column, by
+        # explicit decision of the requester.
+        copy_all:
+          - regions
+
+        # Tables deliberately left empty, by the same decision.
+        skipped: []
+
+        # Child rows whose parent row was not copied, counted per table and
+        # foreign key. Foreign keys are not enforced while rows stream in, so
+        # this is how incomplete references are surfaced rather than hidden.
+        # An empty map means every reference resolved.
+        orphans:
+          orders:
+            orders_customer_id_fkey -> customers: 144
+
+    # Set only once status is "deleted".
+    deleted_at: null
+    deleted_by: null
+
+  # ---------------------------------------------------------------------------
+  # A permanent production database: no expiry, no seeding.
+  # ---------------------------------------------------------------------------
+  - id: c41e9d27-8b6f-4e03-91ac-5d7f0e2b63f8
+    name: prod-billing-api-20260301
+    kind: prod
+    ref: hejepzmvylfkbjmsexrh
+    environment: prod
+    secret_path: billing
+    vault_path: prod/billing/prod-billing-api-20260301
+    size: small
+    region: eu-central-1
+    requested_by: dev@example.com
+    purpose: billing API
+    created_at: '2026-03-01T08:00:00Z'
+    # Permanent kinds (DB_AGENT_PERMANENT_KINDS) get no expiry by default.
+    expires_at: null
+    status: active
+    seeds: []
+    deleted_at: null
+    deleted_by: null
+
+  # ---------------------------------------------------------------------------
+  # A deleted database. The entry stays as history: it records that the project
+  # and its Vault secret were removed, and by whom.
+  # ---------------------------------------------------------------------------
+  - id: a9d8d829-76e8-4d99-905b-e8414e0eac5a
+    name: test-schema-check-20260214
+    kind: test
+    ref: sccqgvlbluovaeunamzw
+    environment: dev
+    secret_path: sandbox
+    vault_path: dev/sandbox/test-schema-check-20260214
+    size: micro
+    region: eu-central-1
+    requested_by: dev@example.com
+    purpose: schema check
+    created_at: '2026-02-14T13:19:11Z'
+    expires_at: '2026-02-19T13:19:11Z'
+    status: deleted
+    seeds: []
+    deleted_at: '2026-02-18T09:38:55Z'
+    deleted_by: dev@example.com

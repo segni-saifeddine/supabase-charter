@@ -1,0 +1,50 @@
+[project]
+name = "supabase-charter"
+version = "0.1.0"
+description = "MCP server that provisions Supabase databases of any kind, keeps their credentials in HashiCorp Vault, and tracks every one in a git-reviewed ledger."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["mcp", "supabase", "vault", "postgres", "database", "provisioning"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Database",
+  "Topic :: Software Development :: Testing",
+  "Topic :: System :: Systems Administration",
+]
+dependencies = [
+  "httpx>=0.27",
+  "mcp>=1.9,<2",
+  "psycopg[binary]>=3.2",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.4",
+  "ruamel.yaml>=0.18",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "respx>=0.21", "ruff>=0.6"]
+
+[project.scripts]
+supabase-charter = "supabase_charter.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]  # line length is enforced by the formatter, not the linter

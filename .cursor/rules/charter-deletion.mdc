@@ -1,0 +1,38 @@
+---
+description: Confirm before deleting or truncating a Supabase database this agent created
+alwaysApply: true
+---
+
+# Charter — confirm destructive calls
+
+The `charter` tools only succeed for databases listed in
+`state/databases.yaml`. That is the boundary. Do not work around a refusal with
+the Supabase dashboard, `psql`, the `vault` CLI, or the Management API.
+
+## Always stop and ask first
+
+- `delete_db` — read back name, ref, kind, purpose and created_at, then wait
+  for an explicit yes that names that project. Only then pass `confirm=true`.
+- `copy_tables` with `mode=replace` — it truncates the plan's `truncates`
+  tables first (only those). Same confirmation, naming the database and every
+  table in that list.
+- Anything destructive on a database of a permanent kind (`prod` and whatever
+  else `agent_config` reports) — say out loud that it is a production database
+  and require the user to name it in their answer.
+
+Silence, or "ok" about a different step, is not a yes.
+
+## Never
+
+- Call these tools for a project that is not in the ledger.
+- Print or write a database password, anon key, or service-role key. Tool
+  results do not contain them; do not fetch them from Vault to show in chat.
+- Edit `state/databases.yaml` by hand, or run git on it. The tools update it
+  and, in auto mode, `publish_ledger` pushes it and opens the pull request.
+- Write to a source database. Copy tools are read-only on sources.
+- Copy data into a production database unless that is exactly what was asked.
+- Retry a refused `charter` call with changed arguments (environment,
+  secret path, kind, size, region, name). A refusal is final: report it and
+  stop.
+- Reuse a `confirm_cost_id` or a user's yes across requests. Each provision
+  gets its own `get_cost` and its own yes.

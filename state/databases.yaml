@@ -1,0 +1,9 @@
+# Ledger of the Supabase databases this agent created. Secret-free and git-tracked.
+#
+# The agent owns this file: every provision, copy, extend, rotation and
+# deletion rewrites it. Do not edit it by hand.
+#
+# It starts empty. See databases.example.yaml in this directory for a fully
+# commented entry explaining every field.
+version: 1
+databases: []

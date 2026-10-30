@@ -1,0 +1,12 @@
+.env
+.venv/
+.ledger-worktree/
+.pip/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.ruff_cache/
+state/*.tmp
